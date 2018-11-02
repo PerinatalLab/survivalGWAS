@@ -15,7 +15,7 @@ ID= args[4] #'MOR_PID' # ID name
 outfile= args[5] #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
 time_t= 'SVLEN_DG' # time variable name
 outcome= 'PROM' # outcome variable name
-covars= c('FAAR', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0','MORS_ALDER') # covariate variable name (multiple are accepted)
+covars= c('FAAR', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0') # covariate variable name (multiple are accepted)
 
 options(stringsAsFactors=FALSE)
 
