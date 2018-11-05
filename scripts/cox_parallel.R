@@ -46,7 +46,7 @@ pheno= pheno %>% filter(MOR_PID %in% d$V1)
 
 d= as.character(d$V1)
 
-colnames= c('chr', 'pos', 'ref', 'eff')
+colnames= c('variant',NULL, NULL, NULL, NULL)
 colnames= append(colnames, d)
 
 time_vec= pheno[, time_t]
@@ -87,12 +87,12 @@ library(compiler)
 print(paste0(ds_folder,transactFile))
 #falsecon = gzfile(paste0(ds_folder, transactFile))
 
-if (grepl('X',transactFile)){
-classes[1]= 'character'
-}
+#if (grepl('X',transactFile)){
+#classes[1]= 'character'
+#}
 
 d= read.table(gzfile(paste0(ds_folder,transactFile)), nrows= 1, skip=0, header=F, fill = TRUE, sep="\t", col.names= colnames, colClasses= classes)
-chr= unique(d[,1])
+chr= strsplit(d[1,1], ':', fixed= T)[1]
 out= paste0(outfile, chr)
 
 if (basename(out) %in% list.files(dirname(outfile))){
@@ -103,10 +103,10 @@ con = gzfile(paste0(ds_folder, transactFile), 'r')
 
 repeat {
 dataChunk= read.table(con, nrows= chunkSize, skip=0, header=F, fill = TRUE, sep="\t", col.names= colnames, colClasses= classes)
-        genvars= with(dataChunk, paste(chr,pos,ref,eff, sep= ':'))
+        genvars= dataChunk$variant
         if (length(genvars) == 0) break
 	
-	dataChunk= subset( dataChunk, select = -c(chr,pos,ref,eff) )
+	dataChunk= subset( dataChunk, select = -c(variant) )
 
 
         dataChunk= as.data.frame(t(dataChunk))
