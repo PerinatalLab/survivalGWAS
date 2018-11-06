@@ -1,13 +1,9 @@
 #!/bin/bash
 
-# bash scripts/extract_vcf.sh
-
-# bash scripts/dosagefromVCF.sh
-
 # Rscript scripts/pheno_HUNT.R
 
-# mkdir /mnt/work/pol/gwas/res/survival/moms/
-# mkdir /mnt/work/pol/gwas/res/survival/fets/
+mkdir /mnt/work/pol/gwas/res/survival/moms/
+mkdir /mnt/work/pol/gwas/res/survival/fets/
 
 # Rscript --vanilla scripts/cox_parallel.R /mnt/work/hunt/dosage/moms/ /mnt/work/hunt/pheno/HUNT_PROM_surv_moms ./raw_data/samples_ID_moms MOR_PID /mnt/work/pol/gwas/res/survival/moms/momsHUNT_PROM_chr
 
