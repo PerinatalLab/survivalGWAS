@@ -14,7 +14,7 @@ outpath= '/mnt/work/hunt/pheno/'
 file_pref= 'HUNT_PROM_surv'
 final_vars= c('MOR_PID', 'SVLEN_DG', 'PROM', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'FAAR', 'PARITY0')
 
-SelectRelated= function(kin_path, sample_list){
+SelectRelated= function(kin_path, sample_list, df, var){
   kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
  kin= kin %>% filter(KINSHIP>0.044)
  kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
@@ -25,7 +25,9 @@ SelectRelated= function(kin_path, sample_list){
   kin_temp= rbind(kin_temp, kin)  
   kin_temp= kin_temp %>% add_count(ID1)
   kin_temp= kin_temp %>% add_count(ID2)
-  kin_temp= arrange(kin_temp, n, nn)
+df[['ID1']]= paste(df[[var]], df[[var]], sep=':')
+kin_temp= inner_join(kin_temp, df[,c('ID1','PROM')], by= 'ID1')
+  kin_temp= arrange(kin_temp, desc(PROM), n, nn)
   to_keep= list()
   
   for (i in 1:nrow(kin_temp)) {
@@ -77,11 +79,11 @@ final_sens_fets= inner_join(final_sens, pc_fets, by= 'BARN_PID') %>% select(fina
 final_sens_moms= final_sens_moms[!duplicated(final_sens_moms$MOR_PID),]
 final_sens_fets= final_sens_fets[!duplicated(final_sens_fets$BARN_PID),]
 
-moms= final_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_moms$MOR_PID)))
-moms_sens= final_sens_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_sens_moms$MOR_PID)))
+moms= final_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_moms$MOR_PID,  final_moms, 'MOR_PID')))
+moms_sens= final_sens_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_sens_moms$MOR_PID,  final_sens_moms, 'MOR_PID')))
 
-fets= final_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_fets$BARN_PID)))
-fets_sens= final_sens_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$BARN_PID)))
+fets= final_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_fets$BARN_PID, final_fets,'BARN_PID' )))
+fets_sens= final_sens_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$BARN_PID, final_sens_fets, 'BARN_PID')))
 
 write.table(moms, paste0(outpath, file_pref, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
 write.table(moms_sens, paste0(outpath, file_pref, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
