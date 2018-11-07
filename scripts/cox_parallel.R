@@ -46,7 +46,7 @@ pheno= pheno %>% filter(MOR_PID %in% d$V1)
 
 d= as.character(d$V1)
 
-colnames= c('variant',NULL, NULL, NULL, NULL)
+colnames= c('variant','x1', 'x2', 'x3', 'x4')
 colnames= append(colnames, d)
 
 time_vec= pheno[, time_t]
@@ -59,6 +59,7 @@ chunkSize <- 1000
 sampleData <- read.table(gzfile(paste0(ds_folder, flist[1]), 'r'), h=F, nrows = 5, col.names= colnames, sep= '\t') #### ADD EXAMPLE DATA SET #######################################################
 classes <- sapply(sampleData, class)
 classes= gsub('integer','numeric',classes)
+classes[2:5]= c('NULL','NULL','NULL','NULL')
 
 # Function to run in parallel
 
