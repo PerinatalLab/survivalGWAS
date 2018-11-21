@@ -75,27 +75,28 @@ def processChunk ( nl ):
 	d.drop([args.ID], axis=1, inplace= True)
 	try:
 		ch= coxph(Formula("Surv(SVLEN_DG, PROM) ~ var + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + FAAR + PARITY0"), data = d, method = 'efron')
-	except rpy2.rinterface.RRuntimeError:
-		coeffs= NA
-		beta= NA
-		se= NA
-		pvalue= NA
-		loglik= NA
-	coeffs = base.summary(ch).rx2('coefficients')
-	df= pd.DataFrame(pandas2ri.ri2py(coeffs), index=coeffs.names[0], columns=coeffs.names[1])
-	beta= df.iloc[0,0]
-	se= df.iloc[0,2]
-	pvalue= df.iloc[0,4]
-	loglik= (-2*loglik_cox) - (-2*ch.rx2('loglik')[1])
-	#print('%s\t%s\t%s\t%s\t%s' % (genvars, beta, se, pvalue, loglik), sep='', end='\n', file= open(out, "a"))
+		coeffs= base.summary(ch).rx2('coefficients')
+		df= pd.DataFrame(pandas2ri.ri2py(coeffs), index=coeffs.names[0], columns=coeffs.names[1])
+		beta= df.iloc[0,0]
+		se= df.iloc[0,2]
+		pvalue= df.iloc[0,4]
+		loglik= (-2*loglik_cox) - (-2*ch.rx2('loglik')[1])
+	except Exception:
+		coeffs= 'NA'
+		beta= 'NA'
+		se= 'NA'
+		pvalue= 'NA'
+		loglik= 'NA'
 	return str(genvars) + '\t' + str(beta) + '\t' + str(se) + '\t' + str(pvalue) + '\t' + str(loglik)
 
-pool = mp.Pool(25)
+pool= mp.Pool(25, maxtasksperchild= 100)
 
 for i in flist:
 	d= pd.read_csv(i, compression= 'gzip', nrows= 1, skiprows=0, names= cnames, sep="\t")
 	CHROM= d.iloc[0,0].split(':')[0]
 	out= args.outfile+CHROM
+	if out in glob.glob(args.outfile+'*'):
+		continue
 	with gzip.open(i, 'rt') as f:
 		for r in pool.imap_unordered(processChunk, (line for line in f), chunksize= 100):
 			print(r, file= open(out, 'a'), end= '\n', sep= '')
