@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-ds_folder= '/mnt/work/hunt/dosage/moms/'  # dosage folder
-phenofile=  '/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
-IDfile= '/mnt/work/hunt/pheno/maternal_ids' # file with sample IDs with same order as in dosage files
-ID= 'MOR_PID' # ID name
-outfile= '/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
+#ds_folder= '/mnt/work/hunt/dosage/moms/'  # dosage folder
+#phenofile=  '/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
+#IDfile= '/mnt/work/hunt/pheno/maternal_ids' # file with sample IDs with same order as in dosage files
+#ID= 'MOR_PID' # ID name
+#outfile= '/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
 time_t= 'SVLEN_DG' # time variable name
-outcome= 'PROM' # outcome variable name
+outcome= 'spont' # outcome variable name
 covars= ['FAAR', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0'] # covariate variable name (multiple are accepted)
 
 import gzip
@@ -57,7 +57,7 @@ pheno.loc[:, args.ID]= pheno.loc[:, args.ID].astype(str)
 cnames= ['variant','x1', 'x2', 'x3', 'x4']
 cnames.extend(d[0].astype(str))
 
-loglik_cox= coxph(Formula("Surv(SVLEN_DG, PROM) ~ PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + FAAR + PARITY0"), data= pheno, method= 'efron')
+loglik_cox= coxph(Formula("Surv(SVLEN_DG, spont) ~ PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + FAAR + PARITY0"), data= pheno, method= 'efron')
 loglik_cox= loglik_cox.rx2('loglik')[1]
 
 sampleData= pd.read_csv(flist[22], compression= 'gzip', names=cnames, nrows = 5, sep= '\t') 
@@ -74,7 +74,7 @@ def processChunk ( nl ):
 	d= d.merge(pheno, how='right', on= args.ID)
 	d.drop([args.ID], axis=1, inplace= True)
 	try:
-		ch= coxph(Formula("Surv(SVLEN_DG, PROM) ~ var + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + FAAR + PARITY0"), data = d, method = 'efron')
+		ch= coxph(Formula("Surv(SVLEN_DG, spont) ~ var + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + FAAR + PARITY0"), data = d, method = 'efron')
 		coeffs= base.summary(ch).rx2('coefficients')
 		df= pd.DataFrame(pandas2ri.ri2py(coeffs), index=coeffs.names[0], columns=coeffs.names[1])
 		beta= df.iloc[0,0]
@@ -89,7 +89,7 @@ def processChunk ( nl ):
 		loglik= 'NA'
 	return str(genvars) + '\t' + str(beta) + '\t' + str(se) + '\t' + str(pvalue) + '\t' + str(loglik)
 
-pool= mp.Pool(25, maxtasksperchild= 100)
+pool= mp.Pool(25, maxtasksperchild= 25)
 
 for i in flist:
 	d= pd.read_csv(i, compression= 'gzip', nrows= 1, skiprows=0, names= cnames, sep="\t")
