@@ -7,6 +7,7 @@ library(tidyr)
 library(survival)
 library(parallel)
 library(compiler)
+library(data.table)
 
 ds_folder= args[1] #'/mnt/work/hunt/dosage/'  # dosage folder
 phenofile=  args[2] #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
@@ -23,7 +24,10 @@ flist= list.files(path= ds_folder, pattern='.gz')
 
 cox_funk= function(snp){
 	X= cbind(snp, covars_m)
-        cox_coef= unlist(summary(coxph(Surv( time_vec, outcome_vec)~ X, na.action = na.omit))[c(4,5,7)])[c(1,3,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
+        cox_coef= try(unlist(summary(coxph(Surv( time_vec, outcome_vec)~ X, na.action = na.omit))[c(4,5,7)])[c(1,3,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)])
+	if(class(cox_coef) == "try-error") {
+    cox_coef= c(NA,NA,NA,NA)
+    }
         return(cox_coef)
 }
 
@@ -102,7 +106,10 @@ return('Chromosome already analysed.')
 
 con = gzfile(paste0(ds_folder, transactFile), 'r')
 
-repeat {
+lskiped= 0
+chunksize= 1000
+
+tryCatch(repeat {
 dataChunk= read.table(con, nrows= chunkSize, skip=0, header=F, fill = TRUE, sep="\t", col.names= colnames, colClasses= classes)
         genvars= dataChunk$variant
         if (length(genvars) == 0) break
@@ -114,14 +121,14 @@ dataChunk= read.table(con, nrows= chunkSize, skip=0, header=F, fill = TRUE, sep=
         dataChunk$id= gsub('X','',rownames(dataChunk))
 	names(dataChunk)[1:length(genvars)]= genvars
         geno= inner_join(data.frame(MOR_PID= phenoID), dataChunk, by= c('MOR_PID' = 'id'))
-	cox_coef= lapply(geno[,-1], cox_funk)
+	cox_coef= mclapply(geno[,-1], 2, cox_funk)
 	cox_coef= do.call("rbind", cox_coef)
         cox_coef= data.frame(cox_coef)
         cox_coef[,2]= (-2*loglik_cox) - (-2*cox_coef[,2])
 	cox_coef$variant= rownames(cox_coef) 
 	
         write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
-}
+}, error= function(e) {})
 
 close(con)
 print(paste('Chromosome', chr,'finished!', sep= ' '))
