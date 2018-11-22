@@ -11,7 +11,7 @@ kin_path= '/mnt/work/hunt/relatedness/'
 moms_kin= 'mother_samples_related.kin0'
 fets_kin= 'fetal_samples_related.kin0'
 outpath= '/mnt/work/hunt/pheno/'
-file_pref_PROM= 'HUNT_spont_surv'
+file_pref_PROM= 'HUNT_PROM_surv'
 file_pref_spont= 'HUNT_spont_surv'
 final_vars_PROM_MOR= c('MOR_PID', 'SVLEN_DG', 'PROM', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'FAAR', 'PARITY0')
 final_vars_PROM_BARN= c('BARN_PID', 'SVLEN_DG', 'PROM', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'FAAR', 'PARITY0')
@@ -56,6 +56,8 @@ pc_fets= read.table(paste0(pc_path, 'fetal_pca.sscore'), h=F, sep= '\t')
 names(pc_moms)= c('MOR_PID', 'IID','X','X1','PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9','PC10')
 names(pc_fets)= c('BARN_PID', 'IID','X','X1','PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9','PC10')
 
+# PROM
+
 final= mutate(mfr, PROM = as.numeric(!is.na(VANNAVGANG)), PARITY0= as.numeric(PARITET_MFR==0))
 final= filter(final, is.na(FLERFODSEL), DODKAT<6 | DODKAT>10, !is.na(SVLEN_DG), SVLEN_DG<308 & SVLEN_DG>154 & !is.na(PROM), (VANNAVGANG<3 | is.na(VANNAVGANG)))
 
@@ -94,7 +96,37 @@ write.table(moms_sens, paste0(outpath, file_pref_PROM, '_moms_sens'), row.names=
 write.table(fets, paste0(outpath, file_pref_PROM, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
 write.table(fets_sens, paste0(outpath, file_pref_PROM, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
 
+### Spontaneous delivery
 
+SelectRelated= function(kin_path, sample_list, df, var){
+  kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
+ kin= kin %>% filter(KINSHIP>0.044)
+ kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
+ kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
+                      ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
+  kin_temp= kin
+  colnames(kin_temp)= c("ID2","ID1","KINSHIP")
+  kin_temp= rbind(kin_temp, kin)
+  kin_temp= kin_temp %>% add_count(ID1)
+  kin_temp= kin_temp %>% add_count(ID2)
+df[['ID1']]= paste(df[[var]], df[[var]], sep=':')
+kin_temp= inner_join(kin_temp, df[,c('ID1','spont')], by= 'ID1')
+  kin_temp= arrange(kin_temp, desc(spont), n, nn)
+  to_keep= list()
+
+  for (i in 1:nrow(kin_temp)) {
+    if (kin_temp[i,"ID1"] %in% unlist(kin_temp[0:i,"ID2"])) {
+      kin_temp[i,"ID2"]= "X"
+    }
+    else
+      to_keep[[i]] <- kin_temp[["ID1"]][i]
+  }
+  to_remove= kin_temp %>% filter(!(ID1 %in% unlist(to_keep))) %>% select(ID1)
+  to_remove= to_remove[!duplicated(to_remove$ID1),]
+  to_remove= to_remove %>% separate(ID1, c('FID','ID'), sep=":")
+
+  return(unlist(to_remove[,1]))
+}
 
 final= mutate(mfr, PARITY0= as.numeric(PARITET_MFR==0), 
 		spont= as.numeric(FSTART==1 & (is.na(KSNITT) | KSNITT>1) &
