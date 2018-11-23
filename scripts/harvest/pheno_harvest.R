@@ -99,10 +99,10 @@ final_fets= final_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_pa
 
 final_sens_fets= final_sens_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$SentrixID_1, final_sens_fets, 'SentrixID_1')))
 
-write.table(final_moms, paste0(outpath, file_pref, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_sens_moms, paste0(outpath, file_pref, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_fets, paste0(outpath, file_pref, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_sens_fets, paste0(outpath, file_pref, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_moms, paste0(outpath, file_pref_PROM, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_sens_moms, paste0(outpath, file_pref_PROM, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_fets, paste0(outpath, file_pref_PROM, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_sens_fets, paste0(outpath, file_pref_PROM, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
 
 ### Spont pheno
 
@@ -138,21 +138,19 @@ kin_temp= inner_join(kin_temp, df[,c('ID1','spont')], by= 'ID1')
 
 final= mutate(mfr, spont= as.numeric(FSTART==1 & (is.na(KSNITT) | KSNITT>1) &
                 (is.na(KSNITT_PLANLAGT) | KSNITT_PLANLAGT==1) &
-                is.na(INDUKSJON_PROSTAGLANDIN) & 
-		is.na(INDUKSJON_ANNET) &
-                is.na(INDUKSJON_OXYTOCIN) & 
-		is.na(INDUKSJON_AMNIOTOMI)), 
+                INDUKSJON_PROSTAGLANDIN==0 & 
+		INDUKSJON_ANNET==0 &
+                INDUKSJON_OXYTOCIN==0 & 
+		INDUKSJON_AMNIOTOMI==0), 
 		PARITY0= as.numeric(PARITET_5==0))
 
 final= filter(final, FLERFODSEL==0 ,
                         DODKAT<6 | DODKAT>10,
                         !is.na(SVLEN_UL_DG),
                         SVLEN_UL_DG<308 & 
-			SVLEN_UL_DG>154 & 
-			!is.na(PROM) & 
-			(VANNAVGANG!=3 | is.na(VANNAVGANG)))
+			SVLEN_UL_DG>154)
 
-final= final[order(final$PROM, decreasing= T),]
+final= final[order(final$spont, decreasing= T),]
 
 final = filter(final, is.na(IVF),ABRUPTIOP==0,
                            PLACENTA_PREVIA==0,
@@ -164,28 +162,28 @@ final_sens = filter(final,
                            is.na(DIABETES_MELLITUS),
                            HYPERTENSJON_ALENE==0 & HYPERTENSJON_KRONISK==0)
 
-final_moms= inner_join(final, pc_moms, by= 'PREG_ID_1724') %>% select(final_vars)
-final_fets= inner_join(final, pc_fets, by= 'PREG_ID_1724') %>% select(final_vars)
+final_moms= inner_join(final, pc_moms, by= 'PREG_ID_1724') %>% select(final_vars_spont)
+final_fets= inner_join(final, pc_fets, by= 'PREG_ID_1724') %>% select(final_vars_spont)
 
 final_moms= final_moms[!duplicated(final_moms$SentrixID_1),]
 final_fets= final_fets[!duplicated(final_fets$SentrixID_1),]
 
-final_sens_moms= inner_join(final_sens, pc_moms, by= 'PREG_ID_1724') %>% select(final_vars)
-final_sens_fets= inner_join(final_sens, pc_fets, by= 'PREG_ID_1724') %>% select(final_vars)
+final_sens_moms= inner_join(final_sens, pc_moms, by= 'PREG_ID_1724') %>% select(final_vars_spont)
+final_sens_fets= inner_join(final_sens, pc_fets, by= 'PREG_ID_1724') %>% select(final_vars_spont)
 
 final_sens_moms= final_sens_moms[!duplicated(final_sens_moms$SentrixID_1),]
 final_sens_fets= final_sens_fets[!duplicated(final_sens_fets$SentrixID_1),]
 
-final_moms= final_moms %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, moms_kin), final_moms$SentrixID_1)))
+final_moms= final_moms %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, moms_kin), final_moms$SentrixID_1, final_moms, 'SentrixID_1')))
 
-final_sens_moms= final_sens_moms %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, moms_kin), final_sens_moms$SentrixID_1)))
+final_sens_moms= final_sens_moms %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, moms_kin), final_sens_moms$SentrixID_1, final_sens_moms, 'SentrixID_1')))
 
-final_fets= final_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, fets_kin), final_fets$SentrixID_1)))
+final_fets= final_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, fets_kin), final_fets$SentrixID_1, final_fets, 'SentrixID_1')))
 
-final_sens_fets= final_sens_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$SentrixID_1)))
+final_sens_fets= final_sens_fets %>% filter(!(SentrixID_1 %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$SentrixID_1, final_sens_fets, 'SentrixID_1')))
 
-write.table(final_moms, paste0(outpath, file_pref, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_sens_moms, paste0(outpath, file_pref, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_fets, paste0(outpath, file_pref, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(final_sens_fets, paste0(outpath, file_pref, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_moms, paste0(outpath, file_pref_spont, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_sens_moms, paste0(outpath, file_pref_spont, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_fets, paste0(outpath, file_pref_spont, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
+write.table(final_sens_fets, paste0(outpath, file_pref_spont, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
 
