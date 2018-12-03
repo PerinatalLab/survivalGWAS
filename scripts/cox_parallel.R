@@ -119,4 +119,4 @@ print(paste('Chromosome', chr,'finished!', sep= ' '))
 
 }
 
-mclapply(flist, mc.cores= 11, funk)
+mclapply(flist, mc.cores= 4, funk)
