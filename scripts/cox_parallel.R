@@ -21,10 +21,14 @@ options(stringsAsFactors=FALSE)
 flist= list.files(path= ds_folder, pattern='.gz')
 
 cox_funk= function(snp){
-	cox_coef= try(unlist(summary(coxph(Surv( geno$SVLEN_UL_DG, geno$PROM)~ snp + geno$BATCH + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit))[c(4,5,7)])[c(1,3,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)], silent=T)
-	if(class(cox_coef) == "try-error") {
-    cox_coef= c(NA,NA,NA,NA)
-    }
+        cox_coef= coxph(Surv( geno$SVLEN_UL_DG, geno$PROM)~ snp + geno$BATCH + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
+#        if(class(cox_coef) == "try-error") {
+ #   cox_coef= c(NA,NA,NA,NA,NA)
+#	return(cox_coef)
+ #   }
+	#cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,3,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
+	cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
+
         return(cox_coef)
 }
 
@@ -33,8 +37,6 @@ cox_zph_funk= function(snp){
         cox_zph= cox.zph(coxph( Surv( time_vec, outcome_vec)~ X, na.action = na.omit ) )$table[1,c(1,3)]
 	return(cox_zph)
 }
-
-cox_funk_cmp= cmpfun(cox_funk)
 
 pheno= read.table(phenofile, h= T, sep='\t')
 
@@ -54,7 +56,7 @@ time_vec= pheno[, time_t]
 outcome_vec= pheno[, outcome]
 covars_m= as.matrix(pheno[,covars])
 
-loglik_cox= summary(coxph( Surv( time_vec, outcome_vec)~ covars_m, na.action = na.omit ) )$loglik[2]
+#loglik_cox= summary(coxph( Surv( time_vec, outcome_vec)~ covars_m, na.action = na.omit ) )$loglik[2]
 
 chunkSize <- 1000
 sampleData <- read.table(gzfile(paste0(ds_folder, flist[1]), 'r'), h=F, nrows = 5, col.names= colnames, sep= '\t') #### ADD EXAMPLE DATA SET #######################################################
@@ -106,10 +108,10 @@ dataChunk= fread(text=block.text, sep="\t", col.names= colnames, colClasses= cla
 	cox_coef= mclapply(geno[,-c(1:dim(pheno)[2])], mc.cores= 3, cox_funk)
 	cox_coef= do.call("rbind", cox_coef)
         cox_coef= data.frame(cox_coef)
-        cox_coef[,2]= (-2*loglik_cox) - (-2*cox_coef[,2])
-	cox_coef$variant= rownames(cox_coef) 
-	
-        write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
+        #cox_coef[,2]= try((-2*loglik_cox) - (-2*cox_coef[,2]), silent= T)
+	cox_coef$variant= rownames(cox_coef)
+        
+	write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
 }
 
 close(con)
@@ -117,4 +119,4 @@ print(paste('Chromosome', chr,'finished!', sep= ' '))
 
 }
 
-mclapply(flist, funk, mc.cores= 11)
+mclapply(flist, mc.cores= 11, funk)
