@@ -60,6 +60,10 @@ classes= gsub('integer','numeric',classes)
 
 funk= function(transactFile){
 
+if (grep('X', transactFile)){
+classes[2]= 'character'
+}
+
 options(stringsAsFactors=FALSE)
 
 # read pheno file; each row is one participant, and column represents one variable
