@@ -8,12 +8,12 @@ library(compiler)
 library(data.table)
 
 ds_folder= '/mnt/work/hunt/dosage/maf01/moms/' #'/mnt/work/hunt/dosage/'  # dosage folder
-phenofile=  '/mnt/work/hunt/pheno/HUNT_PROM_surv_moms_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
+phenofile=  '/mnt/work/hunt/pheno/HUNT_spont_surv_moms_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
 IDfile= '/mnt/work/hunt/pheno/maternal_ids' #'./raw_data/samples_ID' # file with sample IDs with same order as in dosage files
 ID= 'MOR_PID' #'MOR_PID' # ID name
-outfile= '/mnt/work/pol/gwas/res/survival/HUNT_PROM_moms_sens_chr' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
+outfile= '/mnt/work/pol/gwas/res/survival/HUNT_spont_moms_sens_chr' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
 time_t= 'SVLEN_DG' # time variable name
-outcome= 'PROM' # outcome variable name
+outcome= 'spont' # outcome variable name
 covars= c('FAAR', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0') # covariate variable name (multiple are accepted)
 
 options(stringsAsFactors=FALSE)
@@ -21,7 +21,7 @@ options(stringsAsFactors=FALSE)
 flist= list.files(path= ds_folder, pattern='.gz')
 
 cox_funk= function(snp){
-        cox_coef= coxph(Surv( geno$SVLEN_DG, geno$PROM)~ snp + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
+        cox_coef= coxph(Surv( geno$SVLEN_DG, geno$spont)~ snp + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
 #        if(class(cox_coef) == "try-error") {
  #   cox_coef= c(NA,NA,NA,NA,NA)
 #	return(cox_coef)
@@ -72,7 +72,7 @@ options(stringsAsFactors=FALSE)
 # read pheno file; each row is one participant, and column represents one variable
 print(paste0(ds_folder,transactFile))
 
-if (grep('X', transactFile)){
+if (grepl('X', transactFile)){
 classes[2]= 'character'
 }
 
