@@ -1,5 +1,3 @@
-args = commandArgs(trailingOnly=TRUE)
-
 library(dplyr)
 library(tidyr)
 library(survival)
@@ -60,7 +58,7 @@ classes= gsub('integer','numeric',classes)
 
 funk= function(transactFile){
 
-if (grep('X', transactFile)){
+if (grepl('X', transactFile)){
 classes[2]= 'character'
 }
 
