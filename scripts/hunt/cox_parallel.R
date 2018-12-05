@@ -101,15 +101,15 @@ dataChunk= fread(text=block.text, sep="\t", col.names= colnames, colClasses= cla
 	names(dataChunk)[1:length(genvars)]= genvars
         geno= inner_join(pheno, dataChunk, by= c('MOR_PID' = 'id'))
 
-	cox_coef= mclapply(geno[,-c(1:dim(pheno)[2])], mc.cores= 3, cox_funk)
+	cox_coef= mclapply(geno[,-c(1:dim(pheno)[2])], mc.cores= 2, cox_funk)
 	cox_coef= do.call("rbind", cox_coef)
         cox_coef= data.frame(cox_coef)
         #cox_coef[,2]= try((-2*loglik_cox) - (-2*cox_coef[,2]), silent= T)
 	cox_coef$variant= rownames(cox_coef)
         
 	write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
-	rm(genvars, geno, dataChunk, cox_coef)
-	#gc(verbose= F)
+
+
 }
 
 close(con)
