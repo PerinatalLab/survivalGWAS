@@ -1,3 +1,5 @@
+ptm <- proc.time()
+
 library(dplyr)
 library(tidyr)
 library(survival)
@@ -80,7 +82,7 @@ return('Chromosome already analysed.')
 con = gzfile(paste0( ds_folder, transactFile))
 
 lskiped= 0
-chunkSize= 500
+chunkSize= 150
 open(con)
 
 repeat {
@@ -99,22 +101,27 @@ dataChunk= fread(text=block.text, sep="\t", col.names= colnames, colClasses= cla
         dataChunk= as.data.frame(t(dataChunk))
         dataChunk$id= gsub('X','',rownames(dataChunk))
 	names(dataChunk)[1:length(genvars)]= genvars
-        geno= inner_join(pheno, dataChunk, by= c('MOR_PID' = 'id'))
+        geno= inner_join(pheno,dataChunk, by= c('MOR_PID'='id'))
 
-	cox_coef= mclapply(geno[,-c(1:dim(pheno)[2])], mc.cores=2, function(snp) {
-        cox_coef= coxph(Surv( geno$SVLEN_DG, geno$spont)~ snp + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
-       
-        cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
+	mclapply(names(geno[,-c(1:dim(pheno)[2])]), mc.preschedule= T, mc.cores=3, function(snp) {
+        cox_coef= coxph(Surv( geno$SVLEN_DG, geno$spont)~ geno[,snp] + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
+	coef = summary( cox_coef)$coefficients[1,1]
+	sd= summary(cox_coef)$coefficient[1,3]
+	n= summary(cox_coef)$n
+	pvalue= summary(cox_coef)$coefficient[1,5]
+	txt = sprintf( "%s\t%e\t%e\t%e\t%e\n", snp, n, coef, sd, pvalue)
+	cat(txt, file= out, append= T)
+        #cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
 
-        return(cox_coef)
+        #return(cox_coef)
 }
 )
-	cox_coef= do.call("rbind", cox_coef)
-        cox_coef= data.frame(cox_coef)
+	#cox_coef= do.call("rbind", cox_coef)
+        #cox_coef= data.frame(cox_coef)
         #cox_coef[,2]= try((-2*loglik_cox) - (-2*cox_coef[,2]), silent= T)
-	cox_coef$variant= rownames(cox_coef)
+	#cox_coef$variant= rownames(cox_coef)
         
-	write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
+	#write.table(cox_coef, out, append=T, row.names=F, col.names=F, quote=F, sep= '\t')
 
 
 }
@@ -124,4 +131,6 @@ print(paste('Chromosome', chr,'finished!', sep= ' '))
 
 }
 
-mclapply(flist, mc.cores= 4, funk)
+mclapply(flist, mc.cores= 7, funk, mc.preschedule=F)
+print(paste0('Time elapsed ', proc.time() -ptm))
+
