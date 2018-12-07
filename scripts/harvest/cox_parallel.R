@@ -8,30 +8,17 @@ library(compiler)
 library(data.table)
 
 ds_folder= '/mnt/work/pol/harvest/dosage/maf01/moms/' #'/mnt/work/hunt/dosage/'  # dosage folder
-phenofile=  '/mnt/work/pol/harvest/pheno/harvest_spont_surv_moms_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
+phenofile=  '/mnt/work/pol/harvest/pheno/harvest_PROM_surv_moms_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
 IDfile= '/mnt/work/pol/harvest/pheno/mother_IDs_harvest' #'./raw_data/samples_ID' # file with sample IDs with same order as in dosage files
 ID= 'SentrixID_1' #'MOR_PID' # ID name
-outfile= '/mnt/work/pol/gwas/results/surv/spont/HARVEST_spont_moms_sent' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
+outfile= '/mnt/work/pol/gwas/results/surv/PROM/HARVEST_PROM_moms_sent' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
 time_t= 'SVLEN_UL_DG' # time variable name
-outcome= 'spont' # outcome variable name
+outcome= 'PROM' # outcome variable name
 covars= c('BATCH', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0') # covariate variable name (multiple are accepted)
 
 options(stringsAsFactors=FALSE)
 
 flist= list.files(path= ds_folder, pattern='.gz')
-
-cox_funk= function(snp){
-        cox_coef= coxph(Surv( geno$SVLEN_UL_DG, geno$spont)~ snp + geno$BATCH + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
-	cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
-
-        return(cox_coef)
-}
-
-cox_zph_funk= function(snp){
-	X= cbind(snp, covars_m)
-        cox_zph= cox.zph(coxph( Surv( time_vec, outcome_vec)~ X, na.action = na.omit ) )$table[1,c(1,3)]
-	return(cox_zph)
-}
 
 pheno= read.table(phenofile, h= T, sep='\t')
 
