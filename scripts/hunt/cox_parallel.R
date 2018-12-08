@@ -20,21 +20,6 @@ options(stringsAsFactors=FALSE)
 
 flist= list.files(path= ds_folder, pattern='.gz')
 
-cox_funk= function(snp){
-        cox_coef= coxph(Surv( geno$SVLEN_DG, geno$spont)~ snp + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
-	print(snp)
-	cox_coef= unlist(summary(cox_coef)[c(4,5,7)])[c(1,4,3+ (length(covars)+1)*2 + 1, 3 + (length(covars)+1)*4 +1)]
-
-        return(cox_coef)
-}
-
-
-cox_zph_funk= function(snp){
-	X= cbind(snp, covars_m)
-        cox_zph= cox.zph(coxph( Surv( time_vec, outcome_vec)~ X, na.action = na.omit ) )$table[1,c(1,3)]
-	return(cox_zph)
-}
-
 pheno= read.table(phenofile, h= T, sep='\t')
 
 pheno[[ID]]= as.character(pheno[[ID]])
@@ -103,7 +88,7 @@ dataChunk= fread(text=block.text, sep="\t", col.names= colnames, colClasses= cla
 	names(dataChunk)[1:length(genvars)]= genvars
         geno= inner_join(pheno,dataChunk, by= c('MOR_PID'='id'))
 
-	mclapply(names(geno[,-c(1:dim(pheno)[2])]), mc.preschedule= T, mc.cores=3, function(snp) {
+	mclapply(names(geno[,-c(1:dim(pheno)[2])]), mc.cores=3, function(snp) {
         cox_coef= coxph(Surv( geno$SVLEN_DG, geno$spont)~ geno[,snp] + geno$FAAR + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
 	coef = summary( cox_coef)$coefficients[1,1]
 	sd= summary(cox_coef)$coefficient[1,3]
@@ -131,6 +116,6 @@ print(paste('Chromosome', chr,'finished!', sep= ' '))
 
 }
 
-mclapply(flist, mc.cores= 7, funk, mc.preschedule=F)
+mclapply(flist, mc.cores= 7, funk)
 print(paste0('Time elapsed ', proc.time() -ptm))
 
