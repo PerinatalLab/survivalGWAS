@@ -7,11 +7,11 @@ library(parallel)
 library(compiler)
 library(data.table)
 
-ds_folder= '/mnt/work/pol/harvest/dosage/maf01/moms/' #'/mnt/work/hunt/dosage/'  # dosage folder
-phenofile=  '/mnt/work/pol/harvest/pheno/harvest_PROM_surv_moms_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
-IDfile= '/mnt/work/pol/harvest/pheno/mother_IDs_harvest' #'./raw_data/samples_ID' # file with sample IDs with same order as in dosage files
+ds_folder= '/mnt/work/pol/harvest/dosage/maf01/fets/' #'/mnt/work/hunt/dosage/'  # dosage folder
+phenofile=  '/mnt/work/pol/harvest/pheno/harvest_PROM_surv_fets_sens' #'/mnt/work/hunt/pheno/HUNT_PROM_surv_moms' # path to phenotype file
+IDfile= '/mnt/work/pol/harvest/pheno/fets_IDs_harvest' #'./raw_data/samples_ID' # file with sample IDs with same order as in dosage files
 ID= 'SentrixID_1' #'MOR_PID' # ID name
-outfile= '/mnt/work/pol/gwas/results/surv/PROM/HARVEST_PROM_moms_sent' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
+outfile= '/mnt/work/pol/gwas/results/surv/fets/PROM/HARVEST_PROM_fets_sent' #'/mnt/work/pol/gwas/res/survival/momsHUNT_PROM_chr' # path to output file
 time_t= 'SVLEN_UL_DG' # time variable name
 outcome= 'PROM' # outcome variable name
 covars= c('BATCH', 'PC1','PC2','PC3', 'PC4', 'PC5', 'PC6','PARITY0') # covariate variable name (multiple are accepted)
@@ -88,7 +88,7 @@ dataChunk= fread(text=block.text, sep="\t", col.names= colnames, colClasses= cla
         dataChunk$id= gsub('X','',rownames(dataChunk))
 	names(dataChunk)[1:length(genvars)]= genvars
         geno= inner_join(pheno, dataChunk, by= c('SentrixID_1' = 'id'))
-	cox_coef= mclapply(names(geno[,-c(1:dim(pheno)[2])]), mc.cores= 3, function(snp){cox_coef= coxph(Surv( geno$SVLEN_UL_DG, geno$spont)~ geno[,snp] + geno$BATCH + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
+	cox_coef= mclapply(names(geno[,-c(1:dim(pheno)[2])]), mc.cores= 3, function(snp){cox_coef= coxph(Surv( geno$SVLEN_UL_DG, geno$PROM)~ geno[,snp] + geno$BATCH + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
 	coef = summary( cox_coef)$coefficients[1,1]
 	sd= summary(cox_coef)$coefficient[1,3]
 	n= summary(cox_coef)$n
@@ -106,4 +106,4 @@ print(paste('Chromosome', chr,'finished!', sep= ' '))
 
 }
 
-mclapply(flist, mc.cores= 4, funk)
+mclapply(flist, mc.cores= 15, funk)
