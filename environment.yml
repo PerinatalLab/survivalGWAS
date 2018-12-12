@@ -1,0 +1,10 @@
+channels:
+        - conda-forge
+        - bioconda
+dependencies:
+        - wget
+        - r-dplyr=0.7.6
+        - bcftools
+        - plink2
+	- pandas=0.23.4
+	- gzip

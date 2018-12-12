@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+
+import pandas as pd
+import glob
+import os
+import gzip
+
+
+magma_gene_pos= 'https://ctg.cncr.nl/software/MAGMA/aux_files/NCBI37.3.zip'
+
+
+rule all:
+	input:
+		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms.genes.out"	
+
+rule dl_1KG:
+	output:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_1KG.zip"
+	shell:
+		"wget https://ctg.cncr.nl/software/MAGMA/ref_data/g1000_eur.zip -O {output}"
+
+rule remove_related_1KG:
+	input:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_1KG.zip",
+		"/home/pol/survivalGWAS/raw_data/EUR_tokeep"
+	output:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated.bim"
+	params:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated"
+	shell:
+		"""
+		unzip {input[0]} -d /mnt/hdd/common/survivalGWAS/1KG/
+                rm {input[0]} /mnt/hdd/common/survivalGWAS/1KG/g1000_eur.synonyms
+		mv /mnt/hdd/common/survivalGWAS/1KG/README /mnt/hdd/common/survivalGWAS/1KG/magma_README
+		/home/pol/software/plink2 --bfile /mnt/hdd/common/survivalGWAS/1KG/g1000_eur --keep {input[1]} --make-bed --out {params}
+		"""
+
+rule modify_1KG_bim:
+	input:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated.bim"
+	output:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bim"
+	run:
+		d= pd.read_csv(input[0], sep= '\t')
+		d.iloc[:,0]= d.iloc[:,0].replace('X','23')
+		d['eff']= d.iloc[:,4]
+		d['ref']= d.iloc[:,5]
+		d.loc[d.eff < d.ref, ['eff', 'ref']] = d.loc[d.eff < d.ref, ['ref', 'eff']].values
+		d.iloc[:,1]= d.iloc[:,0].astype(str) + ':' + d.iloc[:,3].astype(str) + ':' + d['eff'] + ':' + d['ref']
+		d.drop(['eff', 'ref'], axis=1, inplace= True)
+		d.to_csv(output[0], sep= '\t', index= False)
+
+rule rename_1KG:
+	input:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bim"
+	output:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bed",
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.fam"
+	params:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated.bed",
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated.fam"
+	shell:
+		"""
+		mv {params[0]} {output[0]}
+		mv {params[1]} {output[1]}
+		"""
+
+rule dl_gene_map:
+	output:
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma_gene.zip"
+	shell:
+		"wget https://ctg.cncr.nl/software/MAGMA/aux_files/NCBI37.3.zip -O {output}"
+
+rule gene_map_unzip:
+	input:
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma_gene.zip"
+	output:
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/gene_map_magma"
+	shell:
+		"""
+		unzip {input} -d /mnt/hdd/common/survivalGWAS/magma/gene_map/
+		rm {input} /mnt/hdd/common/survivalGWAS/magma/gene_map/REPORT
+		cut -f1-4 /mnt/hdd/common/survivalGWAS/magma/gene_map/NCBI37.3.gene.loc > {output}
+		"""
+
+rule map_1KG_genes:
+	input:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bim",
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/gene_map_magma"
+	output:
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma.genes.annot"
+	params:
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma"
+	shell:
+		"/home/pol/software/magma/magma --annotate window=20 --snp-loc {input[0]} --gene-loc {input[1]} --out {params}"
+
+rule modify_summary:
+	input:
+		"/mnt/hdd/common/survivalGWAS/results/HUNT_moms_spont_allchr.gz"
+	output:
+		"/mnt/hdd/common/survivalGWAS/results/test_allchr_magma"
+	run:
+		with gzip.open(input[0], 'rt') as f:
+			d= pd.read_csv(f, sep= '\t')
+		d.columns= ['SNP','N','beta','se','P']
+		d[['chr','pos','eff','ref']]= d['SNP'].str.split(':',expand=True)
+		d.loc[d.eff < d.ref, ['eff', 'ref']] = d.loc[d.eff < d.ref, ['ref', 'eff']].values
+		d['P']= d['P'].round(10)
+		d['SNP']= d['chr'].astype(str) + ':' + d['pos'].astype(str) + ':' + d['eff'] + ':' + d['ref']
+		d= d[['SNP','P','N']]
+		d.to_csv(output[0], sep= '\t', header= True, index= False)
+
+rule magma_gene_based:
+	input:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bed",
+		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma.genes.annot",
+		"/mnt/hdd/common/survivalGWAS/results/test_allchr_magma"
+	output:
+		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms.genes.out"
+	params:
+		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod",
+		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms"
+	shell:
+		"/home/pol/software/magma/magma --bfile {params[0]} --gene-annot {input[1]} --pval {input[2]} ncol=3 --out {params[1]}"
