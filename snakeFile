@@ -5,13 +5,11 @@ import glob
 import os
 import gzip
 
-
-magma_gene_pos= 'https://ctg.cncr.nl/software/MAGMA/aux_files/NCBI37.3.zip'
-
-
 rule all:
 	input:
-		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms.genes.out"	
+		"/mnt/hdd/common/survivalGWAS/results/magma/HUNT_moms_spont.genes.out",
+		"/mnt/hdd/common/survivalGWAS/results/magma/HARVEST_moms_PROM.genes.out",
+		"/mnt/hdd/common/survivalGWAS/results/magma/HARVEST_moms_spont.genes.out"
 
 rule dl_1KG:
 	output:
@@ -96,9 +94,9 @@ rule map_1KG_genes:
 
 rule modify_summary:
 	input:
-		"/mnt/hdd/common/survivalGWAS/results/HUNT_moms_spont_allchr.gz"
+		"/mnt/hdd/common/survivalGWAS/results/{cohort}_{samples}_{pheno}_allchr.gz"
 	output:
-		"/mnt/hdd/common/survivalGWAS/results/test_allchr_magma"
+		"/mnt/hdd/common/survivalGWAS/results/{cohort}_{samples}_{pheno}_allchr_magma"
 	run:
 		with gzip.open(input[0], 'rt') as f:
 			d= pd.read_csv(f, sep= '\t')
@@ -114,11 +112,14 @@ rule magma_gene_based:
 	input:
 		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod.bed",
 		"/mnt/hdd/common/survivalGWAS/magma/gene_map/magma.genes.annot",
-		"/mnt/hdd/common/survivalGWAS/results/test_allchr_magma"
+		"/mnt/hdd/common/survivalGWAS/results/{cohort}_{samples}_{pheno}_allchr_magma"
 	output:
-		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms.genes.out"
+		"/mnt/hdd/common/survivalGWAS/results/magma/{cohort}_{samples}_{pheno}.genes.out"
 	params:
 		"/mnt/hdd/common/survivalGWAS/1KG/magma_KG_unrelated_mod",
-		"/mnt/hdd/common/survivalGWAS/results/magma/gene_PROM_moms"
+		"/mnt/hdd/common/survivalGWAS/results/magma/{cohort}_{samples}_{pheno}"
 	shell:
 		"/home/pol/software/magma/magma --bfile {params[0]} --gene-annot {input[1]} --pval {input[2]} ncol=3 --out {params[1]}"
+
+
+
