@@ -9,7 +9,8 @@ rule all:
 	input:
 		"/mnt/hdd/common/survivalGWAS/results/magma/HUNT_moms_spont.genes.out",
 		"/mnt/hdd/common/survivalGWAS/results/magma/HARVEST_moms_PROM.genes.out",
-		"/mnt/hdd/common/survivalGWAS/results/magma/HARVEST_moms_spont.genes.out"
+		"/mnt/hdd/common/survivalGWAS/results/magma/HARVEST_moms_spont.genes.out",
+		"/mnt/hdd/common/survivalGWAS/results/magma/HUNT_moms_PROM.genes.out"
 
 rule dl_1KG:
 	output:
