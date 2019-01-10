@@ -57,48 +57,6 @@ pc_fets= read.table(paste0(pc_path, 'fetal_pca.sscore'), h=F, sep= '\t')
 names(pc_moms)= c('MOR_PID', 'IID','X','X1','PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9','PC10')
 names(pc_fets)= c('BARN_PID', 'IID','X','X1','PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9','PC10')
 
-'''
-# PROM (initial phenotype. Not used)
-
-final= mutate(mfr, PROM = as.numeric(!is.na(VANNAVGANG)), PARITY0= as.numeric(PARITET_MFR==0))
-final= filter(final, is.na(FLERFODSEL), DODKAT<6 | DODKAT>10, !is.na(SVLEN_DG), SVLEN_DG<308 & SVLEN_DG>154 & !is.na(PROM))
-
-final = filter(final, is.na(ART),is.na(ABRUPTIOP),
-                           is.na(PLACENTA_PREVIA),
-			is.na(FOSTERV_POLYHYDRAMNION),
-			is.na(MISD))
-
-final= final[order(final$PROM, decreasing= T),]
-
-final_sens= filter(final,
-			   is.na(PREEKL),
-			   is.na(DIABETES_MELLITUS),
-			   is.na(HYPERTENSJON_ALENE) & is.na(HYPERTENSJON_KRONISK))
-
-final_moms= inner_join(final, pc_moms, by= 'MOR_PID') %>% select(final_vars_PROM_MOR)
-final_fets= inner_join(final, pc_fets, by= 'BARN_PID') %>% select(final_vars_PROM_BARN)
-
-final_moms= final_moms[!duplicated(final_moms$MOR_PID),]
-final_fets= final_fets[!duplicated(final_fets$BARN_PID),]
-
-final_sens_moms= inner_join(final_sens, pc_moms, by= 'MOR_PID') %>% select(final_vars_PROM_MOR)
-final_sens_fets= inner_join(final_sens, pc_fets, by= 'BARN_PID') %>% select(final_vars_PROM_BARN)
-
-final_sens_moms= final_sens_moms[!duplicated(final_sens_moms$MOR_PID),]
-final_sens_fets= final_sens_fets[!duplicated(final_sens_fets$BARN_PID),]
-
-moms= final_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_moms$MOR_PID,  final_moms, 'MOR_PID')))
-moms_sens= final_sens_moms %>% filter(!(MOR_PID %in% SelectRelated(paste0(kin_path, moms_kin), final_sens_moms$MOR_PID,  final_sens_moms, 'MOR_PID')))
-
-fets= final_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_fets$BARN_PID, final_fets,'BARN_PID' )))
-fets_sens= final_sens_fets %>% filter(!(BARN_PID %in% SelectRelated(paste0(kin_path, fets_kin), final_sens_fets$BARN_PID, final_sens_fets, 'BARN_PID')))
-
-write.table(moms, paste0(outpath, file_pref_PROM, '_moms'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(moms_sens, paste0(outpath, file_pref_PROM, '_moms_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(fets, paste0(outpath, file_pref_PROM, '_fets'), row.names=F, col.names=T, sep= '\t', quote=F)
-write.table(fets_sens, paste0(outpath, file_pref_PROM, '_fets_sens'), row.names=F, col.names=T, sep= '\t', quote=F)
-'''
-
 ### Spontaneous delivery
 
 SelectRelated= function(kin_path, sample_list, df, var){
