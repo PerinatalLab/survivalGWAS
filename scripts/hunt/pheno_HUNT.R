@@ -9,7 +9,7 @@ pheno_path= '/mnt/archive/hunt/phenotypes/mfr/'
 pc_path= '/mnt/work/hunt/pca/'
 kin_path= '/mnt/work/hunt/relatedness/'
 moms_kin= 'mother_samples_related.kin0'
-
+fets_kin= 'fetal_samples_related.kin0'
 outpath= '/mnt/work/hunt/pheno/'
 file_pref_PROM= 'HUNT_PROM_surv'
 file_pref_spont= 'HUNT_spont_surv'
