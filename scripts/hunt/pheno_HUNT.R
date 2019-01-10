@@ -9,7 +9,7 @@ pheno_path= '/mnt/archive/hunt/phenotypes/mfr/'
 pc_path= '/mnt/work/hunt/pca/'
 kin_path= '/mnt/work/hunt/relatedness/'
 moms_kin= 'mother_samples_related.kin0'
-fets_kin= 'fetal_samples_related.kin0'
+
 outpath= '/mnt/work/hunt/pheno/'
 file_pref_PROM= 'HUNT_PROM_surv'
 file_pref_spont= 'HUNT_spont_surv'
@@ -18,37 +18,6 @@ final_vars_PROM_BARN= c('BARN_PID', 'SVLEN_DG', 'PROM', 'PC1', 'PC2', 'PC3', 'PC
 final_vars_spont_MOR= c('MOR_PID', 'SVLEN_DG', 'spont', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'FAAR', 'PARITY0')
 final_vars_spont_BARN= c('BARN_PID', 'SVLEN_DG', 'spont', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'FAAR', 'PARITY0')
 icd_path= '/mnt/archive/hunt/phenotypes/hnt/Gestational age_AP_Avidentifisert.txt'
-
-SelectRelated= function(kin_path, sample_list, df, var){
-  kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
- kin= kin %>% filter(KINSHIP>0.044)
- kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
- kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
-                      ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
-  kin_temp= kin
-  colnames(kin_temp)= c("ID2","ID1","KINSHIP")
-  kin_temp= rbind(kin_temp, kin)  
-  kin_temp= kin_temp %>% add_count(ID1)
-  kin_temp= kin_temp %>% add_count(ID2)
-df[['ID1']]= paste(df[[var]], df[[var]], sep=':')
-kin_temp= inner_join(kin_temp, df[,c('ID1','PROM')], by= 'ID1')
-  kin_temp= arrange(kin_temp, desc(PROM), n, nn)
-  to_keep= list()
-  
-  for (i in 1:nrow(kin_temp)) {
-    if (kin_temp[i,"ID1"] %in% unlist(kin_temp[0:i,"ID2"])) {
-      kin_temp[i,"ID2"]= "X"
-    }
-    else
-      to_keep[[i]] <- kin_temp[["ID1"]][i]
-  }
-  to_remove= kin_temp %>% filter(!(ID1 %in% unlist(to_keep))) %>% select(ID1) 
-  to_remove= to_remove[!duplicated(to_remove$ID1),]
-  to_remove= to_remove %>% separate(ID1, c('FID','ID'), sep=":")
-
-  return(unlist(to_remove[,1]))
-}
-
 
 mfr= read.table(paste0(pheno_path, 'MFR.txt'), h=T, sep= '\t')
 pc_moms= read.table(paste0(pc_path, 'mother_pca.sscore'), h=F, sep='\t')
@@ -175,14 +144,15 @@ icd= mutate(icd,
 		PROM_icd9= grepl('658.1|658.2', icd$ICD_9, fixed=F),
 		PROM_icd10= grepl('O42', icd$ICD_10, fixed=F))
 icd= icd %>% mutate(PROM_icd= ifelse(PROM_icd9== 1 | PROM_icd10== 1, 1, 0)) %>% select(PID.106764, FAAR, PROM_icd)
+icd= icd %>% filter(PROM_icd==1)
 
 final= mutate(mfr, PROM = as.numeric(!is.na(VANNAVGANG)), PARITY0= as.numeric(PARITET_MFR==0))
 
 final= left_join(final, icd, by= c('MOR_PID'='PID.106764', 'FAAR'))
 
-final= mutate(final, PROM= ifelse(PROM==1 | PROM_icd== 1, 1, 0))
+final= mutate(final, PROM= ifelse((PROM==0) & (is.na(PROM_icd)), 0, 1))
 
-final= filter(final, is.na(FLERFODSEL), DODKAT<6 | DODKAT>10, !is.na(SVLEN_DG), SVLEN_DG<308 & SVLEN_DG>154 & !is.na(PROM), (VANNAVGANG<3 | is.na(VANNAVGANG)))
+final= filter(final, is.na(FLERFODSEL), DODKAT<6 | DODKAT>10, !is.na(SVLEN_DG), SVLEN_DG<308 & SVLEN_DG>154 & !is.na(PROM))
 
 final = filter(final, is.na(ART),is.na(ABRUPTIOP),
                            is.na(PLACENTA_PREVIA),
@@ -200,6 +170,7 @@ final_sens= mutate(final,
                 is.na(INDUKSJON_OXYTOCIN) & is.na(INDUKSJON_AMNIOTOMI)))
 
 final_sens= mutate(final_sens, PROM= ifelse(spont== 1 & PROM==1, 1, 0))
+final_sens= final_sens[order(final_sens$PROM, decreasing= T),]
 
 final_moms= inner_join(final, pc_moms, by= 'MOR_PID') %>% select(final_vars_PROM_MOR)
 final_fets= inner_join(final, pc_fets, by= 'BARN_PID') %>% select(final_vars_PROM_BARN)
