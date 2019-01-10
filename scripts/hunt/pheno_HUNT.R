@@ -103,7 +103,7 @@ write.table(fets_sens, paste0(outpath, file_pref_PROM, '_fets_sens'), row.names=
 
 SelectRelated= function(kin_path, sample_list, df, var){
   kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
- kin= kin %>% filter(KINSHIP>0.044)
+ kin= kin %>% filter(KINSHIP>0.0884)
  kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
  kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
                       ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
@@ -182,7 +182,7 @@ write.table(fets_sens, paste0(outpath, file_pref_spont, '_fets_sens'), row.names
 
 SelectRelated= function(kin_path, sample_list, df, var){
   kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
- kin= kin %>% filter(KINSHIP>0.044)
+ kin= kin %>% filter(KINSHIP>0.0884)
  kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
  kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
                       ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
