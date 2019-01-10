@@ -18,7 +18,7 @@ final_vars_spont= c('SentrixID_1', 'SVLEN_UL_DG', 'spont', 'PC1', 'PC2', 'PC3', 
 
 SelectRelated= function(kin_path, sample_list, df, var){
   kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
- kin= kin %>% filter(KINSHIP>0.044)
+ kin= kin %>% filter(KINSHIP>0.0884)
  kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
  kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
                       ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
@@ -65,7 +65,7 @@ final= mutate(mfr, PROM = as.numeric(!is.na(VANNAVGANG)), PARITY0= as.numeric(PA
 final= filter(final, FLERFODSEL==0 , 
 			DODKAT<6 | DODKAT>10, 
 			!is.na(SVLEN_UL_DG), 
-			SVLEN_UL_DG<308 & SVLEN_UL_DG>154 & !is.na(PROM) & (VANNAVGANG!=3 | is.na(VANNAVGANG)))
+			SVLEN_UL_DG<308 & SVLEN_UL_DG>154 & !is.na(PROM))
 
 final= final[order(final$PROM, decreasing= T),]
 
@@ -108,7 +108,7 @@ write.table(final_sens_fets, paste0(outpath, file_pref_PROM, '_fets_sens'), row.
 
 SelectRelated= function(kin_path, sample_list, df, var){
   kin= read.table(kin_path, h=T, comment.char = "", sep= '\t')
- kin= kin %>% filter(KINSHIP>0.044)
+ kin= kin %>% filter(KINSHIP>0.0884)
  kin= kin %>% filter(X.FID1 %in% sample_list & FID2 %in% sample_list)
  kin= kin %>% mutate(ID1= paste(X.FID1,ID1, sep= ":"),
                       ID2= paste(FID2, ID2, sep= ":")) %>% select(ID1, ID2, KINSHIP)
