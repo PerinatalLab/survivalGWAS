@@ -46,61 +46,14 @@ rule extract_samples:
                 if 'harvest' not in wildcards.cohort:
                         d= pd.read_csv(input[0], delim_whitespace= True, header= 0)
                         Sentrix= 'SentrixID'
-                if 'moms' in wildcards.sample:
+                if 'maternal' in wildcards.sample:
                         d= d.loc[d.Role=='Mother', :]
-                if 'fets' in wildcards.sample:
+                if 'fetal' in wildcards.sample:
                         d= d.loc[d.Role=='Child', :]
                 x= [line.strip() for line in open(input[1], 'r')]
                 d= d.loc[d[Sentrix].isin(x), :]
                 d.drop_duplicates(subset= [Sentrix], inplace= True)
                 d.to_csv(output[0], header= False, columns= [Sentrix], index= False, sep= '\t')
-
-
-rule filter_DS:
-	'List variants with MAF> 0.1 and INFO> 0.4.'
-	input:
-		'/mnt/work/pol/{cohort}/info/INFO.txt.gz'
-	output:
-		temp('/mnt/work/pol/survivalGWAS/info/{cohort}_range.txt')
-	run:
-		d= pd.DataFrame()
-		for chunk in pd.read_csv(input[0], sep= '\t', header= None, compression= 'gzip', names= ['chr', 'pos', 'ref', 'eff', 'AN', 'AC', 'INFO'], chunksize= 100000, iterator= True):
-			chunk= chunk.loc[chunk.INFO> 0.4, :]
-			chunk['MAF']= np.where( (chunk.AN / chunk.AC) < 0.5, chunk.AN / chunk.AC, 1- (chunk.AN / chunk.AC))
-			chunk= chunk.loc[chunk.MAF> 0.01, ['chr', 'pos']]
-			d= d.append(chunk, ignore_index=True)
-		d.to_csv(output[0], sep= '\t', header= False, index= False)
-
-rule get_DS:
-	'Extract DS from VCF file for a subset of genetic variants.'
-	input:
-		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/{sample}_toextract',
-		'/mnt/archive/HARVEST/delivery-fhi/data/imputed/imputed_m12/{CHR}.vcf.gz',
-                '/mnt/archive/HARVEST/delivery-fhi/data/imputed/imputed_m24/{CHR}.vcf.gz',
-                '/mnt/archive/ROTTERDAM1/delivery-fhi/data/imputed/{CHR}.vcf.gz',
-                '/mnt/archive/ROTTERDAM2/delivery-fhi/data/imputed/{CHR}.vcf.gz',
-                '/mnt/archive/NORMENT1/delivery-fhi/data/imputed/feb18/{CHR}.vcf.gz',
-                '/mnt/archive/NORMENT1/delivery-fhi/data/imputed/may16/{CHR}.vcf.gz',
-		'/mnt/work/pol/survivalGWAS/info/{cohort}_range.txt'
-	output:
-		temp('/mnt/work/pol/survivalGWAS/genotype/DS/{cohort}/dosages/{sample}_DS{CHR}')
-	run:
-		if 'harvestm12' in wildcards.cohort: coh= input[1]
-		if 'harvestm24' in wildcards.cohort: coh= input[2]
-		if 'rotterdam1' in wildcards.cohort: coh= input[3]
-		if 'rotterdam2' in wildcards.cohort: coh= input[4]
-		if 'normentfeb' in wildcards.cohort: coh= input[5]
-		if 'normentmay' in wildcards.cohort: coh= input[6]
-                shell("~/soft/bcftools-1.9/bin/bcftools query -R {input[7]} -S {input[0]} -f '%CHROM\t%POS\t%REF\t%ALT[\t%DS]\n' {coh} -o {output[0]}")
-
-rule gzip_DS:
-	'Compress dosage files.'
-	input:
-		'/mnt/work/pol/survivalGWAS/genotype/DS/{cohort}/dosages/{sample}_DS{CHR}'
-	output:
-		temp('/mnt/work/pol/survivalGWAS/genotype/DS/{cohort}/dosages/DS{CHR}_{sample}.gz')
-	shell:
-		'gzip {input[0]} {output[0]}'
 
 rule phenofile:
         'Merge all data necessary to create a phenotype file for spontaneous delivery and PROM.'
@@ -110,7 +63,8 @@ rule phenofile:
                 '/mnt/work/pol/{cohort}/pca/{cohort}_pca.txt',
                 '/mnt/work/pol/{cohort}/relatedness/all_{cohort}.kin0',
                 '/mnt/work/pol/{cohort}/pheno/flag_list.txt',
-		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/{sample}_toextract'
+		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/{sample}_toextract',
+		'/mnt/work/pol/harvestm12/pca/all_pca_outliers_hapmap.txt'
         output:
                 '/mnt/work/pol/survivalGWAS/pheno/{cohort}/pheno_{sample}.txt'
         script:
@@ -119,12 +73,24 @@ rule phenofile:
 rule survival_analysis:
 	''
 	input:
-		'/mnt/work/pol/survivalGWAS/genotype/DS/{cohort}/dosages/DS{CHR}_{sample}.gz',
-		'/mnt/work/pol/survivalGWAS/pheno/{cohort}/pheno_{sample}.txt'
+		'/mnt/work/pol/survivalGWAS/pheno/{cohort}/pheno_maternal.txt',
+		'/mnt/work/pol/survivalGWAS/pheno/{cohort}/pheno_fetal.txt',
+		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/vcf_ids',
+		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/maternal_toextract',
+		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/fetal_toextract',
+		'/mnt/archive/HARVEST/delivery-fhi/data/imputed/imputed_m12/{CHR}.vcf.gz',
+		'/mnt/archive/HARVEST/delivery-fhi/data/imputed/imputed_m24/{CHR}.vcf.gz',
+		'/mnt/archive/ROTTERDAM1/delivery-fhi/data/imputed/{CHR}.vcf.gz',
+		'/mnt/archive/ROTTERDAM2/delivery-fhi/data/imputed/{CHR}.vcf.gz',
+		'/mnt/archive/NORMENT1/delivery-fhi/data/imputed/feb18/{CHR}.vcf.gz',
+		'/mnt/archive/NORMENT1/delivery-fhi/data/imputed/may16/{CHR}.vcf.gz'
 	output:
-		temp('/mnt/work/pol/survivalGWAS/results/{cohort}/{pheno}_{sample}_{CHR}_results.txt')
-	run:
-		'scripts/cox_parallel.R'
+		temp('/mnt/work/pol/survivalGWAS/results/{cohort}/spont_maternal_{CHR}_results.txt'),
+		temp('/mnt/work/pol/survivalGWAS/results/{cohort}/PROM_maternal_{CHR}_results.txt'),
+		temp('/mnt/work/pol/survivalGWAS/results/{cohort}/spont_fetal_{CHR}_results.txt'),
+		temp('/mnt/work/pol/survivalGWAS/results/{cohort}/PROM_fetal_{CHR}_results.txt')
+	script:
+		'scripts/cox.R'
 
 rule concat_results:
 	'Concat results from GWAS.'
