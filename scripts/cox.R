@@ -7,17 +7,29 @@ library(data.table)
 
 options(stringsAsFactors=FALSE)
 
+
+STRATA= NULL
+CONTROL= structure(list(eps = 1e-09, toler.chol = .Machine$double.eps^0.75, iter.max = 20, toler.inf = 3.16227766016838e-05, outer.max = 10, timefix = TRUE), .Names = c("eps", "toler.chol", "iter.max","toler.inf", "outer.max","timefix"))
+OFFSET= NULL
+WEIGHTS= NULL
+METHOD= "efron"
+
+INIT= NULL
+
+
 funk= function(pheno, geno, outcome, outfile){
         cox_coef= lapply(names(geno[,-c(1:ncol(pheno))]), function(snp) {
-	cox_coef= coxph(Surv(geno$SVLEN_UL_DG, geno[, outcome])~ geno[,snp] + geno$PARITY0 + geno$PC1 + geno$PC2 + geno$PC3 + geno$PC4 + geno$PC5 + geno$PC6, na.action = na.omit)
-        coef = summary( cox_coef)$coefficients[1,1]
-        sd= summary(cox_coef)$coefficient[1,3]
-        n= summary(cox_coef)$n
-        pvalue= summary(cox_coef)$coefficient[1,5]
-        zph= cox.zph(cox_coef)
-        correlation= zph$table[1, 1]
-        corr_pvalue= zph$table[1, 3]
-        txt = sprintf( "%s\t%e\t%e\t%e\t%e\t%e\t%e\n", snp, n, coef, sd, pvalue, correlation, corr_pvalue)
+	df= geno[, c('SVLEN_UL_DG', outcome, snp,'PARITY0', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6')]
+	df= na.omit(df)
+	X= as.matrix(df[, c(snp,'PARITY0', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6')])
+	Y= Surv(df[, 'SVLEN_UL_DG'], df[, outcome])
+	cox_coef= coxph.fit(X, Y, STRATA, OFFSET, INIT, CONTROL, WEIGHTS, METHOD, 1:nrow(X))
+        coef = cox_coef$coefficients[1]
+        sd= sqrt(abs(cox_coef$var[1,1]))
+        n= nrow(df)
+	event= sum(df[, outcome])
+        pvalue= 2*pnorm(abs(coef/sd), lower.tail=FALSE)
+        txt= sprintf("%s\t%e\t%e\t%e\t%e\t%e\n", snp, n, event, coef, sd, pvalue)
 cat(txt, file= outfile, append= T)
 }
 )
@@ -69,6 +81,8 @@ pheno= pheno %>% mutate(spont= as.numeric(FSTART==1 & (is.na(KSNITT) | KSNITT>1)
                 INDUKSJON_AMNIOTOMI==0),
                 PARITY0= as.numeric(PARITET_5==0),
                 PROM= as.numeric(!is.na(VANNAVGANG)))
+pheno= select(pheno, SentrixID_1, SVLEN_UL_DG, PROM, spont, PARITY0, PC1, PC2, PC3, PC4, PC5, PC6)
+pheno= na.omit(pheno)
 } else if (!grepl('harvest', moms_phenofile)){
 pheno= pheno %>% mutate(spont= as.numeric(FSTART=='Spontan' | FSTART== '' & (KSNITT=='' | KSNITT== 'Uspesifisert' | KSNITT== 'Akutt keisersnitt') &
                 INDUKSJON_PROSTAGLANDIN=='Nei' &
@@ -78,6 +92,8 @@ pheno= pheno %>% mutate(spont= as.numeric(FSTART=='Spontan' | FSTART== '' & (KSN
                 PARITY0= as.numeric(PARITET_5=='0 (førstegangsfødende)'),
                 PROM= as.numeric(!is.na(VANNAVGANG)))
 names(pheno)[names(pheno) == 'SentrixID'] <- 'SentrixID_1'
+pheno= select(pheno, SentrixID_1, SVLEN_UL_DG, PROM, spont, PARITY0, PC1, PC2, PC3, PC4, PC5, PC6)
+pheno =na.omit(pheno)
 }
 return(pheno)
 }
@@ -88,7 +104,7 @@ fets_pheno= format_pheno(fets_pheno)
 con = file(infile, "r")
 
 repeat {
-z= scan(con, n=100, what= 'character', sep= '\n', comment.char= '#')
+z= scan(con, n=350, what= 'character', sep= '\n', comment.char= '#')
 
 if ( length(z) == 0 ) {
       break
@@ -109,6 +125,13 @@ varnames= apply(df[,1], 1, function(x) paste(unlist(strsplit(as.character(x), '\
 x= as.data.frame(t(x))
 names(x)= unlist(varnames)
 x= x[which(apply(!is.na(x), 1, all)),]
+
+
+#x= Filter(function(col) length(unique(col[!is.na(col)])) > 1, x)
+
+#if (ncol(x)== 0) {
+#	next
+#}
 
 x= cbind(id= ids, x)
 
