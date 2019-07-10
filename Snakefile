@@ -3,7 +3,7 @@ import numpy as np
 
 cohort_nms= ['harvestm12', 'harvestm24', 'rotterdam1', 'rotterdam2', 'normentfeb', 'normentmay']
 sample_nms= ['maternal', 'fetal']
-CHR_nms= ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22', 'X']
+CHR_nms= ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22']
 pheno_nms= ['spont', 'PROM']
 
 rule all:
