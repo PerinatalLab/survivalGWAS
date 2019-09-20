@@ -7,9 +7,9 @@ coh= snakemake.wildcards.cohort
 sampl= snakemake.wildcards.sample
 
 def pheno_harvest():
-	mfr= pd.read_csv(snakemake.input[0], sep= ';', header= 0)
-	link= pd.read_csv(snakemake.input[1], sep= ';', header= 0)
-	pca= pd.read_csv(snakemake.input[2], sep= ' ', header= 0)
+	mfr= pd.read_csv(snakemake.input[0], sep= '\t', header= 0)
+	link= pd.read_csv(snakemake.input[1], sep= '\t', header= 0)
+	pca= pd.read_csv(snakemake.input[2], sep= '\t', header= 0)
 	pca.columns= ['FID', 'SentrixID_1', 'x1', 'x2' 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6', 'PC7', 'PC8', 'PC9', 'PC10']
 	link= link.loc[link.PREG_ID_1724.str.isnumeric(), :]
 	link['PREG_ID_1724']= link['PREG_ID_1724'].astype(str).astype(int)

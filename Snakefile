@@ -64,7 +64,7 @@ rule phenofile:
                 '/mnt/work/pol/{cohort}/relatedness/all_{cohort}.kin0',
                 '/mnt/work/pol/{cohort}/pheno/flag_list.txt',
 		'/mnt/work/pol/survivalGWAS/raw_data/{cohort}/{sample}_toextract',
-		'/mnt/work/pol/harvestm12/pca/all_pca_outliers_hapmap.txt'
+		'/mnt/work/pol/{cohort}/pca/all_pca_outliers_hapmap.txt'
         output:
                 '/mnt/work/pol/survivalGWAS/pheno/{cohort}/pheno_{sample}.txt'
         script:

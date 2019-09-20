@@ -4,6 +4,10 @@
 library(dplyr)
 library(survival)
 library(data.table)
+library(RhpcBLASctl)
+
+blas_set_num_threads(3)
+
 
 options(stringsAsFactors=FALSE)
 
@@ -18,6 +22,7 @@ INIT= NULL
 
 
 funk= function(pheno, geno, outcome, outfile){
+	if (ncol(geno)<= 1) {return(NULL)}
         cox_coef= lapply(names(geno[,-c(1:ncol(pheno))]), function(snp) {
 	df= geno[, c('SVLEN_UL_DG', outcome, snp,'PARITY0', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6')]
 	df= na.omit(df)
@@ -127,6 +132,7 @@ names(x)= unlist(varnames)
 x= x[which(apply(!is.na(x), 1, all)),]
 
 
+
 #x= Filter(function(col) length(unique(col[!is.na(col)])) > 1, x)
 
 #if (ncol(x)== 0) {
@@ -140,6 +146,9 @@ x= cbind(id= ids, x)
 
 geno_moms= inner_join(moms_pheno, x, by= c('SentrixID_1' = 'id'))
 geno_fets= inner_join(fets_pheno, x, by= c('SentrixID_1' = 'id'))
+
+geno_moms= geno_moms[,!apply(geno_moms, MARGIN = 2, function(x) max(x, na.rm = TRUE) == min(x, na.rm = TRUE))]
+geno_fets= geno_fets[,!apply(geno_fets, MARGIN = 2, function(x) max(x, na.rm = TRUE) == min(x, na.rm = TRUE))]
 
 funk(moms_pheno, geno_moms, 'spont', outfile_spont_moms)
 funk(moms_pheno, geno_moms, 'PROM', outfile_PROM_moms)
