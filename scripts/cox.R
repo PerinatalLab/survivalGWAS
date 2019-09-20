@@ -22,7 +22,9 @@ INIT= NULL
 
 
 funk= function(pheno, geno, outcome, outfile){
-	if (ncol(geno)<= 1) {return(NULL)}
+	if (ncol(geno)<= 11) {
+	return(NULL)
+	}
         cox_coef= lapply(names(geno[,-c(1:ncol(pheno))]), function(snp) {
 	df= geno[, c('SVLEN_UL_DG', outcome, snp,'PARITY0', 'PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6')]
 	df= na.omit(df)
@@ -89,6 +91,8 @@ pheno= pheno %>% mutate(spont= as.numeric(FSTART==1 & (is.na(KSNITT) | KSNITT>1)
 pheno= select(pheno, SentrixID_1, SVLEN_UL_DG, PROM, spont, PARITY0, PC1, PC2, PC3, PC4, PC5, PC6)
 pheno= na.omit(pheno)
 } else if (!grepl('harvest', moms_phenofile)){
+
+pheno$VANNAVGANG= ifelse(pheno$VANNAVGANG== '', NA, pheno$VANNAVGANG)
 pheno= pheno %>% mutate(spont= as.numeric(FSTART=='Spontan' | FSTART== '' & (KSNITT=='' | KSNITT== 'Uspesifisert' | KSNITT== 'Akutt keisersnitt') &
                 INDUKSJON_PROSTAGLANDIN=='Nei' &
                 INDUKSJON_ANNET=='Nei' &
@@ -140,9 +144,6 @@ x= x[which(apply(!is.na(x), 1, all)),]
 #}
 
 x= cbind(id= ids, x)
-
-
-
 
 geno_moms= inner_join(moms_pheno, x, by= c('SentrixID_1' = 'id'))
 geno_fets= inner_join(fets_pheno, x, by= c('SentrixID_1' = 'id'))
